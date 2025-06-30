@@ -9,9 +9,48 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build JAR with Maven (skip tests)
+        run: mvn clean package -DskipTests
+        working-directory: ./pi
+
+      - name: List target directory
+        run: ls -l ./pi/target
+
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Run tests with Maven
+        run: mvn test
+        working-directory: ./pi
+
+  sonar:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -26,29 +65,26 @@ jobs:
           path: ~/.sonar/cache
           key: ${{ runner.os }}-sonar
 
-      - name:  Build JAR with Maven
-        run: mvn clean package -DskipTests
-        working-directory: ./pi
-
-      - name: List target directory
-        run: ls -l ./pi/target
-
-      - name: Build and SonarCloud Scan with Maven
+      - name: SonarCloud scan
         run: mvn -B verify -DskipTests org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=SiwarHmedii_PI_BackEnd
         working-directory: ./pi
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
+  docker:
+    needs: sonar
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: 🐳 Log in to Docker Hub
+      - name: Docker Hub Login
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-
-
-      - name: 🐳 Log in to Docker (Nexus)
+      - name: Docker Nexus Login
         run: echo "${{ secrets.NEXUS_PASSWORD }}" | docker login ebc0-102-104-219-38.ngrok-free.app --username ${{ secrets.NEXUS_USERNAME }} --password-stdin
 
       - name: Build Docker image
