@@ -85,11 +85,11 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Docker Nexus Login
-        run: echo "admin" | docker login a7cd-160-156-242-204.ngrok-free.app  --username "admin" --password-stdin
+        run: echo "${{ secrets.NEXUS_PASSWORD }}" | docker login 9643-160-156-242-204.ngrok-free.app  --username ${{ secrets.NEXUS_USERNAME }} --password-stdin
 
       - name: Build Docker image
-        run: docker build -t a7cd-160-156-242-204.ngrok-free.app/repository/docker-hosted/pi-app:latest .
+        run: docker build -t 9643-160-156-242-204.ngrok-free.app/repository/docker-hosted/pi-app:latest .
         working-directory: ./pi
 
       - name: Push Docker image to Nexus
-        run: docker push a7cd-160-156-242-204.ngrok-free.app/repository/docker-hosted/pi-app:latest
+        run: docker push 9643-160-156-242-204.ngrok-free.app/repository/docker-hosted/pi-app:latest
